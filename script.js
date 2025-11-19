@@ -6,16 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerText;
-            
+
             submitBtn.innerText = 'Sending...';
             submitBtn.disabled = true;
-            
+
             // Simulate network request
             setTimeout(() => {
                 submitBtn.innerText = 'Message Sent!';
                 submitBtn.style.backgroundColor = 'var(--accent-green)';
                 form.reset();
-                
+
                 setTimeout(() => {
                     submitBtn.innerText = originalText;
                     submitBtn.disabled = false;
@@ -25,46 +25,65 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Audio Player Simulation
+    // Audio Player Implementation
     const audioPlayers = document.querySelectorAll('.audio-player');
-    
+
     audioPlayers.forEach(player => {
         const playBtn = player.querySelector('.play-btn');
         const progressBar = player.querySelector('.track-progress');
-        let isPlaying = false;
-        let progress = 0;
-        let interval;
+        const timeDisplay = player.querySelector('.time-display');
+        const audio = player.querySelector('audio');
+
+        if (!audio) return;
+
+        // Format time helper
+        const formatTime = (seconds) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        // Update duration when metadata loads
+        audio.addEventListener('loadedmetadata', () => {
+            timeDisplay.innerText = formatTime(audio.duration);
+        });
 
         playBtn.addEventListener('click', () => {
             // Stop other players
             audioPlayers.forEach(otherPlayer => {
                 if (otherPlayer !== player) {
+                    const otherAudio = otherPlayer.querySelector('audio');
                     const otherBtn = otherPlayer.querySelector('.play-btn');
-                    const otherBar = otherPlayer.querySelector('.track-progress');
-                    otherBtn.innerText = '▶';
-                    // Reset other players if needed, or just pause them
-                    // For simplicity, we won't reset progress of others, just visual pause
+                    if (otherAudio) {
+                        otherAudio.pause();
+                        otherBtn.innerText = '▶';
+                    }
                 }
             });
 
-            isPlaying = !isPlaying;
-            
-            if (isPlaying) {
+            if (audio.paused) {
+                audio.play();
                 playBtn.innerText = '⏸';
-                interval = setInterval(() => {
-                    progress += 1;
-                    if (progress > 100) {
-                        progress = 0;
-                        isPlaying = false;
-                        playBtn.innerText = '▶';
-                        clearInterval(interval);
-                    }
-                    progressBar.style.width = `${progress}%`;
-                }, 100);
             } else {
+                audio.pause();
                 playBtn.innerText = '▶';
-                clearInterval(interval);
             }
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            const progress = (audio.currentTime / audio.duration) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            // Update time display (remaining time or current time)
+            // Showing remaining time like the original design implied (or total duration)
+            // Let's show current / total
+            timeDisplay.innerText = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+        });
+
+        audio.addEventListener('ended', () => {
+            playBtn.innerText = '▶';
+            progressBar.style.width = '0%';
+            timeDisplay.innerText = formatTime(audio.duration);
         });
     });
 
